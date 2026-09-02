@@ -4,7 +4,7 @@ import {
   addDays, addMonths, addWeeks, eachDayOfInterval, format, isBefore, isSameDay,
   isToday, parseISO, startOfDay, startOfMonth, startOfWeek, subMonths, subWeeks,
 } from "date-fns";
-import { CalendarDays, Check, ChevronLeft, ChevronRight, MapPin } from "lucide-react";
+import { CalendarDays, Check, ChevronLeft, ChevronRight, Clock3, MapPin } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useApp } from "@/components/providers/app-provider";
@@ -92,7 +92,6 @@ function AgendaTask({ task }: { task: Task }) {
   return (
     <>
       <article className={`${styles.taskRow} ${completed ? styles.taskRowCompleted : ""} ${completing ? styles.completing : ""}`}>
-        <time className={`${styles.taskTime} ${overdue ? styles.timeOverdue : ""} ${dueToday ? styles.timeToday : ""}`} dateTime={task.dueTime ?? undefined}>{task.dueTime ?? "Any time"}</time>
         <button type="button" className={styles.completeButton} onClick={() => void complete()} aria-label={`Complete ${task.title}`}>
           <span className={task.priority === "urgent" ? styles.urgentCheck : task.priority === "high" ? styles.highCheck : ""}>
             {completing && <Check size={13} strokeWidth={2.6} />}
@@ -100,8 +99,11 @@ function AgendaTask({ task }: { task: Task }) {
         </button>
         <button type="button" className={styles.taskBody} onClick={() => setDetailOpen(true)}>
           <strong>{task.title}</strong>
+          <span className={styles.taskMetadata}>
+            <span className={`${styles.taskTime} ${overdue ? styles.timeOverdue : ""} ${dueToday ? styles.timeToday : ""}`}><Clock3 size={11} />{task.dueTime ?? "Any time"}</span>
+            {property && <span className={styles.propertyMeta}><MapPin size={11} />{property.name}</span>}
+          </span>
           <span className={styles.taskContext}>
-            {property && <span><MapPin size={11} />{property.name}</span>}
             {emphasized && <em className={task.priority === "urgent" ? styles.urgent : styles.high}>{task.priority}</em>}
             {(task.category === "report" || task.category === "campaign") && <em>{task.category}</em>}
           </span>
