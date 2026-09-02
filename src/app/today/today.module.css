@@ -120,3 +120,5 @@
 @media (max-width:365px) { .summary { gap: 6px; font-size: 10px; } .summary strong { font-size: 11px; } }
 @media (min-width:620px) { .screen { padding-top: 28px; } }
 @media (prefers-reduced-motion:reduce) { .taskItem, .checkCircle, .completedToggle > svg { transition: none; } .isCompleting, .isCompleting .checkCircle, .isCompleting .taskBody > strong { animation: none; } }
+
+.screen{background:transparent}.screen::before,.screen::after{background:none}

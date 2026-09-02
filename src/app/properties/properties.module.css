@@ -95,3 +95,5 @@
 @media(prefers-reduced-motion:reduce) {
   .editButton,.addTask,.campaignAction,.detailsCard button { transition:none; }
 }
+
+.listScreen,.detailScreen{background:transparent}.listScreen::before,.listScreen::after,.detailScreen::before,.detailScreen::after{background:none}
