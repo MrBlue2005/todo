@@ -3,7 +3,7 @@
 import { format, parseISO } from "date-fns";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, CalendarDays, Check, ChevronDown, ChevronRight, Flag, MapPin, Pencil, Plus, Rocket, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useApp } from "@/components/providers/app-provider";
 import { QuickCreateSheet } from "@/components/quick-create-sheet";
 import { MobileSheet } from "@/components/task-interactions/mobile-sheet";
@@ -15,6 +15,47 @@ import styles from "../properties.module.css";
 const priorityRank = { urgent: 0, high: 1, normal: 2, low: 3 } as const;
 const sortAttention = (a: Task, b: Task) => priorityRank[a.priority] - priorityRank[b.priority] || a.dueDate.localeCompare(b.dueDate) || (a.dueTime ?? "24:00").localeCompare(b.dueTime ?? "24:00");
 const sortUpcoming = (a: Task, b: Task) => a.dueDate.localeCompare(b.dueDate) || priorityRank[a.priority] - priorityRank[b.priority] || (a.dueTime ?? "24:00").localeCompare(b.dueTime ?? "24:00");
+type AmbientPeriod = "morning" | "day" | "evening" | "night";
+
+function ambientPeriodForHour(hour: number): AmbientPeriod {
+  if (hour >= 6 && hour < 11) return "morning";
+  if (hour >= 11 && hour < 17) return "day";
+  if (hour >= 17 && hour < 22) return "evening";
+  return "night";
+}
+
+function useLocalAmbientPeriod() {
+  const [period, setPeriod] = useState<AmbientPeriod>("day");
+
+  useEffect(() => {
+    let timer = 0;
+
+    function updatePeriod() {
+      window.clearTimeout(timer);
+      const localNow = new Date();
+      setPeriod(ambientPeriodForHour(localNow.getHours()));
+
+      const nextBoundary = new Date(localNow);
+      const nextHour = [6, 11, 17, 22].find((hour) => hour > localNow.getHours());
+      if (nextHour === undefined) nextBoundary.setDate(nextBoundary.getDate() + 1);
+      nextBoundary.setHours(nextHour ?? 6, 0, 1, 0);
+      timer = window.setTimeout(updatePeriod, nextBoundary.getTime() - localNow.getTime());
+    }
+
+    function refreshWhenVisible() {
+      if (document.visibilityState === "visible") updatePeriod();
+    }
+
+    updatePeriod();
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+    return () => {
+      window.clearTimeout(timer);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+    };
+  }, []);
+
+  return period;
+}
 
 export default function PropertyDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -24,10 +65,11 @@ export default function PropertyDetailPage() {
   const [launching, setLaunching] = useState(false);
   const [editing, setEditing] = useState(false);
   const [completedOpen, setCompletedOpen] = useState(false);
+  const ambientPeriod = useLocalAmbientPeriod();
   const property = properties.find((item) => item.id === id);
 
-  if (!ready) return <div className={`screen ${styles.detailScreen}`}><div className={styles.detailSkeleton} /></div>;
-  if (!property) return <div className={`screen ${styles.notFound}`}><h1>Property not found</h1><button type="button" onClick={() => router.push("/properties")}>Back to properties</button></div>;
+  if (!ready) return <div className={`screen ${styles.detailScreen}`} data-ambient={ambientPeriod}><div className={styles.detailSkeleton} /></div>;
+  if (!property) return <div className={`screen ${styles.detailScreen} ${styles.notFound}`} data-ambient={ambientPeriod}><h1>Property not found</h1><button type="button" onClick={() => router.push("/properties")}>Back to properties</button></div>;
 
   const propertyTasks = tasks.filter((task) => task.propertyId === id);
   const active = propertyTasks.filter((task) => task.status === "todo");
@@ -38,6 +80,7 @@ export default function PropertyDetailPage() {
   const orderedActive = [...overdue, ...today, ...upcoming];
   const propertyCampaigns = campaigns.filter((campaign) => campaign.propertyId === id);
   const simpleTaskList = active.length <= 2;
+  const statusClass = property.status === "new" ? styles.detailStatusNew : property.status === "active" ? styles.detailStatusHealthy : undefined;
 
   async function handleDelete() {
     if (!property || !confirm(`Delete ${property.name}? Its tasks will be detached.`)) return;
@@ -46,20 +89,20 @@ export default function PropertyDetailPage() {
   }
 
   return (
-    <div className={`screen ${styles.detailScreen}`}>
+    <div className={`screen ${styles.detailScreen}`} data-ambient={ambientPeriod}>
       <div className={styles.detailTopbar}>
         <button className={styles.back} type="button" onClick={() => router.back()}><ArrowLeft size={19} /> Properties</button>
         <button className={styles.editButton} type="button" onClick={() => setEditing(true)} aria-label="Edit property"><Pencil size={16} /></button>
       </div>
 
       <header className={styles.detailHeader}>
-        <span className={styles.detailStatus}>{property.status.replace("_", " / ")}</span>
+        <span className={`${styles.detailStatus} ${statusClass ?? ""}`}>{property.status.replace("_", " / ")}</span>
         <h1>{property.name}</h1>
         <p><MapPin size={14} />{property.address}</p>
         <div className={styles.detailSummary} aria-label="Property workload summary">
-          <span><strong>{today.length}</strong> today</span><i />
+          <span className={today.length ? styles.summaryToday : undefined}><strong>{today.length}</strong> today</span><i />
           <span className={overdue.length ? styles.summaryUrgent : undefined}><strong>{overdue.length}</strong> overdue</span><i />
-          <span><strong>{upcoming.length}</strong> upcoming</span>
+          <span className={upcoming.length ? styles.summaryUpcoming : undefined}><strong>{upcoming.length}</strong> upcoming</span>
         </div>
       </header>
 
@@ -108,7 +151,7 @@ export default function PropertyDetailPage() {
         <section className={styles.detailsSection}>
           <SectionHeading title="Property details" />
           <div className={styles.detailsCard}>
-            <div><small>Status</small><strong>{property.status.replace("_", " / ")}</strong></div>
+            <div><small>Status</small><strong className={statusClass}>{property.status.replace("_", " / ")}</strong></div>
             {property.description && <p>{property.description}</p>}
             <button type="button" onClick={() => setEditing(true)}><Pencil size={14} /> Edit property details</button>
           </div>

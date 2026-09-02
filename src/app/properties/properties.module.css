@@ -6,3 +6,92 @@
 @media(max-width:365px){.listHeader{align-items:flex-start}.addProperty{padding:0 9px}.detailSummary{gap:6px;font-size:10px}.detailSummary strong{font-size:11px}}
 @media(prefers-reduced-motion:reduce){.propertyRow,.addProperty,.filters button,.search,.addTask,.completedToggle>svg{transition:none}}
 .search button{width:44px;height:44px;margin-right:-12px;color:var(--text-muted)}.filters button{min-height:44px;border-radius:22px;color:#929096}.workload{font-size:11px}
+
+.detailScreen {
+  --today-ambient-primary: rgba(188,185,178,.055);
+  --today-ambient-secondary: rgba(97,103,110,.025);
+  --today-ambient-lower: rgba(65,75,88,.024);
+  --today-surface-top: #18181a;
+  --today-surface-bottom: #121214;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: #09090a;
+}
+.detailScreen::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0 0 auto;
+  height: min(680px,76svh);
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 105% 62% at 18% 2%,var(--today-ambient-primary),transparent 76%),
+    linear-gradient(155deg,var(--today-ambient-secondary),transparent 70%);
+}
+.detailScreen::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: auto 0 0;
+  height: min(460px,54svh);
+  pointer-events: none;
+  background: radial-gradient(ellipse 94% 46% at 72% 100%,var(--today-ambient-lower),transparent 74%);
+}
+.detailScreen[data-ambient="morning"] { --today-ambient-primary:rgba(203,168,103,.105); --today-ambient-secondary:rgba(137,94,53,.035); --today-ambient-lower:rgba(69,75,82,.018); }
+.detailScreen[data-ambient="evening"] { --today-ambient-primary:rgba(181,112,58,.095); --today-ambient-secondary:rgba(111,65,45,.04); --today-ambient-lower:rgba(43,58,78,.03); }
+.detailScreen[data-ambient="night"] { --today-ambient-primary:rgba(91,111,139,.07); --today-ambient-secondary:rgba(44,57,76,.035); --today-ambient-lower:rgba(40,55,78,.038); }
+.editButton {
+  border-color: rgba(255,255,255,.08);
+  background: linear-gradient(155deg,#1b1b1e,#121214);
+  box-shadow: inset 0 1px rgba(255,255,255,.03),0 7px 20px rgba(0,0,0,.16);
+  transition: transform .16s ease,opacity .16s ease;
+}
+.editButton:active { transform:scale(.96); opacity:.82; }
+.detailStatusNew { color:#8192a8; }
+.detailStatusHealthy { color:#789c86; }
+.detailSummary .summaryToday strong { color:#c6a96b; }
+.detailSummary .summaryUpcoming strong { color:#8496ad; }
+.addTask {
+  border: 1px solid #cdb477;
+  background: linear-gradient(180deg,#cbb276 0%,#bea163 100%);
+  box-shadow: inset 0 1px rgba(255,255,255,.18),0 8px 22px rgba(0,0,0,.24);
+  transition: transform .16s ease,opacity .16s ease;
+}
+.campaignAction {
+  border-color: rgba(255,255,255,.085);
+  background: linear-gradient(158deg,var(--today-surface-top),var(--today-surface-bottom) 78%);
+  box-shadow: inset 0 1px rgba(255,255,255,.03),0 11px 30px rgba(0,0,0,.2);
+  transition: transform .16s ease,background .16s ease,opacity .16s ease;
+}
+.campaignAction:active { background:linear-gradient(158deg,#1a1a1c,#131315 78%); transform:scale(.985); opacity:.9; }
+.taskGroup,.campaignGroup {
+  border-color: rgba(255,255,255,.085);
+  background: linear-gradient(158deg,var(--today-surface-top),var(--today-surface-bottom) 78%);
+  box-shadow: inset 0 1px rgba(255,255,255,.03),0 12px 32px rgba(0,0,0,.22);
+}
+.noWork {
+  border-color: rgba(255,255,255,.068);
+  background: linear-gradient(155deg,#161617,#111113 78%);
+  color: inherit;
+  box-shadow: inset 0 1px rgba(255,255,255,.026),0 11px 30px rgba(0,0,0,.17);
+}
+.noWork > svg { color:#789c86; }
+.detailsCard {
+  border-color: rgba(255,255,255,.075);
+  background: linear-gradient(155deg,#161618,#111113 78%);
+  box-shadow: inset 0 1px rgba(255,255,255,.026),0 10px 28px rgba(0,0,0,.16);
+}
+.detailsCard > div > strong.detailStatusNew { color:#8192a8; }
+.detailsCard > div > strong.detailStatusHealthy { color:#789c86; }
+.detailsCard button {
+  width: 100%;
+  margin-top: 12px;
+  padding-top: 11px;
+  border-top: 1px solid rgba(255,255,255,.06);
+  transition: opacity .16s ease;
+}
+.detailsCard button:active { opacity:.68; }
+@media(prefers-reduced-motion:reduce) {
+  .editButton,.addTask,.campaignAction,.detailsCard button { transition:none; }
+}
