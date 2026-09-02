@@ -3,13 +3,54 @@
 import { format, isTomorrow, parseISO } from "date-fns";
 import Link from "next/link";
 import { AlertCircle, ChevronRight, MapPin, Plus, Search, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useApp } from "@/components/providers/app-provider";
 import { taskBucket } from "@/lib/date";
 import type { Property, PropertyStatus, Task } from "@/types";
 import styles from "./properties.module.css";
 
 type PropertyFilter = "all" | "attention" | "active" | "clear";
+type AmbientPeriod = "morning" | "day" | "evening" | "night";
+
+function ambientPeriodForHour(hour: number): AmbientPeriod {
+  if (hour >= 6 && hour < 11) return "morning";
+  if (hour >= 11 && hour < 17) return "day";
+  if (hour >= 17 && hour < 22) return "evening";
+  return "night";
+}
+
+function useLocalAmbientPeriod() {
+  const [period, setPeriod] = useState<AmbientPeriod>("day");
+
+  useEffect(() => {
+    let timer = 0;
+
+    function updatePeriod() {
+      window.clearTimeout(timer);
+      const localNow = new Date();
+      setPeriod(ambientPeriodForHour(localNow.getHours()));
+
+      const nextBoundary = new Date(localNow);
+      const nextHour = [6, 11, 17, 22].find((hour) => hour > localNow.getHours());
+      if (nextHour === undefined) nextBoundary.setDate(nextBoundary.getDate() + 1);
+      nextBoundary.setHours(nextHour ?? 6, 0, 1, 0);
+      timer = window.setTimeout(updatePeriod, nextBoundary.getTime() - localNow.getTime());
+    }
+
+    function refreshWhenVisible() {
+      if (document.visibilityState === "visible") updatePeriod();
+    }
+
+    updatePeriod();
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+    return () => {
+      window.clearTimeout(timer);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+    };
+  }, []);
+
+  return period;
+}
 
 function openTasksFor(property: Property, tasks: Task[]) {
   return tasks.filter((task) => task.propertyId === property.id && task.status === "todo");
@@ -32,7 +73,8 @@ export default function PropertiesPage() {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<PropertyFilter>("all");
   const [creating, setCreating] = useState(false);
-  const activeCount = properties.filter((property) => property.status === "active").length;
+  const ambientPeriod = useLocalAmbientPeriod();
+  const attentionCount = properties.filter((property) => needsAttention(openTasksFor(property, tasks))).length;
 
   const visible = useMemo(() => properties
     .filter((property) => {
@@ -50,11 +92,15 @@ export default function PropertiesPage() {
     }), [filter, properties, query, tasks]);
 
   return (
-    <div className={`screen ${styles.listScreen}`}>
+    <div className={`screen ${styles.listScreen}`} data-ambient={ambientPeriod}>
       <header className={styles.listHeader}>
         <div>
           <h1>Properties</h1>
-          <p>{activeCount} active</p>
+          <p>
+            {properties.length} {properties.length === 1 ? "property" : "properties"} ·{" "}
+            <strong className={attentionCount > 0 ? styles.summaryAttention : undefined}>{attentionCount}</strong>{" "}
+            {attentionCount === 1 ? "needs" : "need"} attention
+          </p>
         </div>
         <button className={styles.addProperty} type="button" onClick={() => setCreating(true)}><Plus size={16} /> Add property</button>
       </header>
@@ -89,11 +135,11 @@ export default function PropertiesPage() {
                 <span className={styles.propertyCopy}>
                   <span className={styles.propertyTitle}>
                     <strong>{property.name}</strong>
-                    {property.status !== "active" && <em>{property.status === "sold_closed" ? "closed" : property.status}</em>}
+                    {property.status !== "active" && <em className={property.status === "new" ? styles.statusNew : undefined}>{property.status === "sold_closed" ? "closed" : property.status}</em>}
                   </span>
                   <span className={styles.location}><MapPin size={12} />{property.address}</span>
                   <span className={styles.workload}>
-                    {overdue > 0 ? <span className={styles.attentionText}><AlertCircle size={11} />{overdue} overdue</span> : <span>{open.length} open {open.length === 1 ? "task" : "tasks"}</span>}
+                    {overdue > 0 ? <span className={styles.attentionText}><AlertCircle size={11} />{overdue} overdue</span> : <span className={open.length > 0 ? styles.pendingText : undefined}>{open.length} open {open.length === 1 ? "task" : "tasks"}</span>}
                     {overdue > 0 && <span>{open.length} open</span>}
                     {deadline && <span>Next {deadline}</span>}
                   </span>
