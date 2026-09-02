@@ -9,6 +9,47 @@ import { MobileSheet } from "@/components/task-interactions/mobile-sheet";
 import { createClient } from "@/lib/supabase/client";
 import styles from "./profile.module.css";
 
+type AmbientPeriod = "morning" | "day" | "evening" | "night";
+
+function ambientPeriodForHour(hour: number): AmbientPeriod {
+  if (hour >= 6 && hour < 11) return "morning";
+  if (hour >= 11 && hour < 17) return "day";
+  if (hour >= 17 && hour < 22) return "evening";
+  return "night";
+}
+
+function useLocalAmbientPeriod() {
+  const [period, setPeriod] = useState<AmbientPeriod>("day");
+
+  useEffect(() => {
+    let timer = 0;
+
+    function updatePeriod() {
+      window.clearTimeout(timer);
+      const localNow = new Date();
+      setPeriod(ambientPeriodForHour(localNow.getHours()));
+
+      const nextBoundary = new Date(localNow);
+      const nextHour = [6, 11, 17, 22].find((hour) => hour > localNow.getHours());
+      if (nextHour === undefined) nextBoundary.setDate(nextBoundary.getDate() + 1);
+      nextBoundary.setHours(nextHour ?? 6, 0, 1, 0);
+      timer = window.setTimeout(updatePeriod, nextBoundary.getTime() - localNow.getTime());
+    }
+
+    function refreshWhenVisible() {
+      if (document.visibilityState === "visible") updatePeriod();
+    }
+
+    updatePeriod();
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+    return () => {
+      window.clearTimeout(timer);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+    };
+  }, []);
+
+  return period;
+}
 type NotificationState = "checking" | "unsupported" | "needs-install" | "default" | "denied" | "granted";
 type InstallPromptEvent = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: "accepted" | "dismissed" }> };
 
@@ -18,6 +59,7 @@ function initials(name: string) {
 
 export default function ProfilePage() {
   const { isDemo, ready, profile, updateDisplayName, uploadProfilePhoto, removeProfilePhoto } = useApp();
+  const ambientPeriod = useLocalAmbientPeriod();
   const [notificationState, setNotificationState] = useState<NotificationState>("checking");
   const [standalone, setStandalone] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
@@ -164,7 +206,7 @@ export default function ProfilePage() {
   const NotificationIcon = notificationState === "granted" ? Bell : notificationState === "denied" || notificationState === "unsupported" ? BellOff : Bell;
 
   return (
-    <div className={styles.screen}>
+    <div className={styles.screen} data-ambient={ambientPeriod}>
       <header className={styles.header}><span>Account & app</span><h1>Profile</h1></header>
 
       <section className={styles.identity} aria-label="Account identity">
