@@ -10,11 +10,53 @@ import { useEffect, useMemo, useState } from "react";
 import { useApp } from "@/components/providers/app-provider";
 import { TaskDetailSheet } from "@/components/task-detail-sheet";
 import { MobileSheet } from "@/components/task-interactions/mobile-sheet";
-import { localDate } from "@/lib/date";
+import { localDate, taskBucket } from "@/lib/date";
 import type { Task } from "@/types";
 import styles from "./calendar.module.css";
 
 const CALENDAR_DATE_EVENT = "rx-calendar-date-change";
+
+type AmbientPeriod = "morning" | "day" | "evening" | "night";
+
+function ambientPeriodForHour(hour: number): AmbientPeriod {
+  if (hour >= 6 && hour < 11) return "morning";
+  if (hour >= 11 && hour < 17) return "day";
+  if (hour >= 17 && hour < 22) return "evening";
+  return "night";
+}
+
+function useAmbientPeriod() {
+  const [period, setPeriod] = useState<AmbientPeriod>("day");
+
+  useEffect(() => {
+    let timer = 0;
+
+    function updatePeriod() {
+      window.clearTimeout(timer);
+      const localNow = new Date();
+      setPeriod(ambientPeriodForHour(localNow.getHours()));
+
+      const nextBoundary = new Date(localNow);
+      const nextHour = [6, 11, 17, 22].find((hour) => hour > localNow.getHours());
+      if (nextHour === undefined) nextBoundary.setDate(nextBoundary.getDate() + 1);
+      nextBoundary.setHours(nextHour ?? 6, 0, 1, 0);
+      timer = window.setTimeout(updatePeriod, nextBoundary.getTime() - localNow.getTime());
+    }
+
+    function refreshWhenVisible() {
+      if (document.visibilityState === "visible") updatePeriod();
+    }
+
+    updatePeriod();
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+    return () => {
+      window.clearTimeout(timer);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+    };
+  }, []);
+
+  return period;
+}
 
 function sortTasks(a: Task, b: Task) {
   if (a.dueTime && b.dueTime) return a.dueTime.localeCompare(b.dueTime) || a.title.localeCompare(b.title);
@@ -35,6 +77,10 @@ function AgendaTask({ task }: { task: Task }) {
   const [completing, setCompleting] = useState(false);
   const property = properties.find((item) => item.id === task.propertyId);
   const emphasized = task.priority === "urgent" || task.priority === "high";
+  const bucket = taskBucket(task);
+  const completed = task.status === "completed";
+  const overdue = bucket === "overdue";
+  const dueToday = bucket === "today";
 
   async function complete() {
     if (completing) return;
@@ -45,8 +91,8 @@ function AgendaTask({ task }: { task: Task }) {
 
   return (
     <>
-      <article className={`${styles.taskRow} ${completing ? styles.completing : ""}`}>
-        <time dateTime={task.dueTime ?? undefined}>{task.dueTime ?? "Any time"}</time>
+      <article className={`${styles.taskRow} ${completed ? styles.taskRowCompleted : ""} ${completing ? styles.completing : ""}`}>
+        <time className={`${styles.taskTime} ${overdue ? styles.timeOverdue : ""} ${dueToday ? styles.timeToday : ""}`} dateTime={task.dueTime ?? undefined}>{task.dueTime ?? "Any time"}</time>
         <button type="button" className={styles.completeButton} onClick={() => void complete()} aria-label={`Complete ${task.title}`}>
           <span className={task.priority === "urgent" ? styles.urgentCheck : task.priority === "high" ? styles.highCheck : ""}>
             {completing && <Check size={13} strokeWidth={2.6} />}
@@ -95,9 +141,9 @@ function DatePicker({ selected, tasks, onSelect, onClose }: { selected: Date; ta
     </MobileSheet>
   );
 }
-
 export default function CalendarPage() {
   const { tasks, ready } = useApp();
+  const ambientPeriod = useAmbientPeriod();
   const [selected, setSelected] = useState(() => startOfDay(new Date()));
   const [pickerOpen, setPickerOpen] = useState(false);
   const weekStart = startOfWeek(selected, { weekStartsOn: 1 });
@@ -121,7 +167,7 @@ export default function CalendarPage() {
   }
 
   return (
-    <div className={styles.screen}>
+    <div className={styles.screen} data-ambient={ambientPeriod}>
       <header className={styles.header}>
         <button type="button" className={styles.monthButton} onClick={() => setPickerOpen(true)} aria-label={`Choose date, currently ${format(selected, "MMMM yyyy")}`}><span>Schedule</span><strong>{format(selected, "MMMM yyyy")}</strong></button>
         {!isSameDay(selected, today) && <button type="button" className={styles.todayButton} onClick={() => chooseDate(today)}>Today</button>}
