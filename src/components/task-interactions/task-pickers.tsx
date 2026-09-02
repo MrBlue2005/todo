@@ -41,7 +41,7 @@ export function TaskPickerSheet({
   return (
     <MobileSheet open nested title={titles[kind]} eyebrow="TASK OPTIONS" onClose={onClose} backLabel="Back to task">
       {kind === "date" && <DatePicker value={values.dueDate} onSelect={(dueDate) => { onChange({ dueDate }); onClose(); }} />}
-      {kind === "time" && <TimePicker value={values.dueTime} onSelect={(dueTime) => { onChange({ dueTime }); onClose(); }} />}
+      {kind === "time" && <TimePicker value={values.dueTime} onConfirm={(dueTime) => onChange({ dueTime })} onCancel={onClose} />}
       {kind === "property" && <PropertyPicker properties={properties} value={values.propertyId} onSelect={(propertyId) => { onChange({ propertyId }); onClose(); }} />}
       {kind === "priority" && <OptionList value={values.priority} options={[{ value: "low", label: "Low" }, { value: "normal", label: "Normal", detail: "Default" }, { value: "high", label: "High", tone: "high" }, { value: "urgent", label: "Urgent", tone: "urgent" }]} onSelect={(priority) => { onChange({ priority: priority as Priority }); onClose(); }} />}
       {kind === "reminder" && <ReminderPicker value={values.reminder} hasTime={Boolean(values.dueTime)} onSelect={(reminder) => { onChange({ reminder }); onClose(); }} />}
@@ -66,9 +66,20 @@ function DatePicker({ value, onSelect }: { value: string; onSelect: (value: stri
   return <><OptionList value={value} options={options} onSelect={onSelect} /><button type="button" className={styles.pickerAction} onClick={() => setCustom(!custom)}>Pick another date</button>{custom && <label className={styles.customField}><span>Date</span><input type="date" value={value} min={localDate()} onChange={(event) => onSelect(event.target.value)} /></label>}</>;
 }
 
-function TimePicker({ value, onSelect }: { value: string; onSelect: (value: string) => void }) {
+function TimePicker({ value, onConfirm, onCancel }: { value: string; onConfirm: (value: string) => void; onCancel: () => void }) {
   const [custom, setCustom] = useState(false);
-  return <><OptionList value={value} options={[{ value: "", label: "No time" }, ...["09:00", "12:00", "15:00", "18:00"].map((time) => ({ value: time, label: time }))]} onSelect={onSelect} /><button type="button" className={styles.pickerAction} onClick={() => setCustom(!custom)}>Custom time</button>{custom && <label className={styles.customField}><span>Time</span><input type="time" value={value} onChange={(event) => onSelect(event.target.value)} /></label>}</>;
+  const [draft, setDraft] = useState(value);
+
+  function commit(time: string) {
+    onConfirm(time);
+    onCancel();
+  }
+
+  return <><OptionList value={draft} options={[{ value: "", label: "No time" }, ...["09:00", "12:00", "15:00", "18:00"].map((time) => ({ value: time, label: time }))]} onSelect={setDraft} /><button type="button" className={styles.pickerAction} onClick={() => setCustom(!custom)}>Custom time</button>{custom && <label className={styles.customField}><span>Time</span><input type="time" value={draft} onChange={(event) => setDraft(event.target.value)} /></label>}
+    <div className={styles.timePickerActions}>
+      <button type="button" className={styles.pickerCancel} onClick={onCancel}>Cancel</button>
+      <button type="button" className={styles.pickerConfirm} onClick={() => commit(draft)}><Check size={17} /> Confirm</button>
+    </div></>;
 }
 
 function PropertyPicker({ properties, value, onSelect }: { properties: Property[]; value: string; onSelect: (value: string) => void }) {
