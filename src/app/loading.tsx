@@ -1,0 +1,1 @@
+export default function Loading() { return <div className="screen"><div className="skeleton title"/><div style={{height:20}}/>{[1,2,3].map((item)=><div className="skeleton card" style={{marginBottom:10}} key={item}/>)}</div>; }
