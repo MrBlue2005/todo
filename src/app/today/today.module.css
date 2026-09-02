@@ -1,8 +1,9 @@
 .screen {
   --today-ambient-primary: rgba(188, 185, 178, .055);
   --today-ambient-secondary: rgba(97, 103, 110, .025);
-  --today-surface-top: #171719;
-  --today-surface-bottom: #111113;
+  --today-ambient-lower: rgba(65, 75, 88, .024);
+  --today-surface-top: #18181a;
+  --today-surface-bottom: #121214;
   position: relative;
   isolation: isolate;
   overflow: hidden;
@@ -14,23 +15,35 @@
   position: absolute;
   z-index: -1;
   inset: 0 0 auto;
-  height: min(440px, 54svh);
+  height: min(680px, 76svh);
   pointer-events: none;
   background:
-    radial-gradient(ellipse 90% 58% at 18% 2%, var(--today-ambient-primary), transparent 68%),
-    linear-gradient(155deg, var(--today-ambient-secondary), transparent 58%);
+    radial-gradient(ellipse 105% 62% at 18% 2%, var(--today-ambient-primary), transparent 76%),
+    linear-gradient(155deg, var(--today-ambient-secondary), transparent 70%);
+}
+.screen::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: auto 0 0;
+  height: min(460px, 54svh);
+  pointer-events: none;
+  background: radial-gradient(ellipse 94% 46% at 72% 100%, var(--today-ambient-lower), transparent 74%);
 }
 .screen[data-ambient="morning"] {
   --today-ambient-primary: rgba(203, 168, 103, .105);
   --today-ambient-secondary: rgba(137, 94, 53, .035);
+  --today-ambient-lower: rgba(69, 75, 82, .018);
 }
 .screen[data-ambient="evening"] {
   --today-ambient-primary: rgba(181, 112, 58, .095);
   --today-ambient-secondary: rgba(111, 65, 45, .04);
+  --today-ambient-lower: rgba(43, 58, 78, .03);
 }
 .screen[data-ambient="night"] {
   --today-ambient-primary: rgba(91, 111, 139, .07);
   --today-ambient-secondary: rgba(44, 57, 76, .035);
+  --today-ambient-lower: rgba(40, 55, 78, .038);
 }
 .header { margin: 2px 2px 0; }
 .header h1 { max-width: 330px; font-size: clamp(28px, 7.5vw, 32px); font-weight: 620; line-height: 1.08; letter-spacing: -.043em; }
@@ -52,10 +65,10 @@
 .viewAll { min-height: 30px; display: inline-flex; align-items: center; gap: 4px; padding: 0 2px 0 10px; color: #b49a65; font-size: 11px; text-decoration: none; }
 .taskGroup {
   overflow: hidden;
-  border: 1px solid rgba(255,255,255,.075);
+  border: 1px solid rgba(255,255,255,.085);
   border-radius: 17px;
   background: linear-gradient(158deg, var(--today-surface-top), var(--today-surface-bottom) 78%);
-  box-shadow: inset 0 1px rgba(255,255,255,.025), 0 11px 30px rgba(0,0,0,.2);
+  box-shadow: inset 0 1px rgba(255,255,255,.03), 0 12px 32px rgba(0,0,0,.22);
 }
 .taskItem { position: relative; min-height: 77px; display: grid; grid-template-columns: 52px minmax(0,1fr); align-items: stretch; transition: background .2s ease, opacity .34s ease, transform .34s cubic-bezier(.2,.75,.25,1); }
 .taskItem + .taskItem::before { content: ""; position: absolute; top: 0; left: 52px; right: 14px; height: 1px; background: rgba(255,255,255,.065); }
@@ -86,7 +99,7 @@
 .isCompleted .taskBody > strong { color: #98959a; text-decoration: line-through; text-decoration-thickness: 1px; }
 .isCompleting { pointer-events: none; animation: taskResolve .36s cubic-bezier(.22,.75,.22,1) both; }
 .isCompleting .taskBody > strong { text-decoration: line-through; text-decoration-thickness: 1px; animation: titleResolve .3s ease-out both; }
-.allClear { min-height: 83px; display: flex; align-items: center; gap: 13px; padding: 16px; border: 1px solid rgba(255,255,255,.06); border-radius: 17px; background: linear-gradient(155deg,#151516,#101012 78%); box-shadow: inset 0 1px rgba(255,255,255,.022), 0 10px 28px rgba(0,0,0,.15); }
+.allClear { min-height: 83px; display: flex; align-items: center; gap: 13px; padding: 16px; border: 1px solid rgba(255,255,255,.068); border-radius: 17px; background: linear-gradient(155deg,#161617,#111113 78%); box-shadow: inset 0 1px rgba(255,255,255,.026), 0 11px 30px rgba(0,0,0,.17); }
 .allClear > span { width: 35px; height: 35px; display: grid; place-items: center; flex: none; border-radius: 50%; background: #1d1a14; color: #aa915e; }
 .allClear strong { display: block; color: #cbc7bf; font-size: 13px; font-weight: 570; }
 .allClear p { margin-top: 4px; color: #706e73; font-size: 11px; line-height: 1.4; }
