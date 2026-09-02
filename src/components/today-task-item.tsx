@@ -2,7 +2,7 @@
 
 import { format, isTomorrow, parseISO } from "date-fns";
 import { Check, Clock3, MapPin, Repeat2 } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useApp } from "@/components/providers/app-provider";
 import { TaskDetailSheet } from "@/components/task-detail-sheet";
 import { taskBucket } from "@/lib/date";
@@ -19,26 +19,44 @@ function deadlineLabel(task: Task) {
   return time ? `${date} · ${time}` : date;
 }
 
-export function TodayTaskItem({ task, showProperty = true, showCategory = false }: { task: Task; showProperty?: boolean; showCategory?: boolean }) {
+export function TodayTaskItem({ task, showProperty = true, showCategory = false, onCompletionStart }: { task: Task; showProperty?: boolean; showCategory?: boolean; onCompletionStart?: (task: Task) => void }) {
   const { properties, toggleTask } = useApp();
   const [detailOpen, setDetailOpen] = useState(false);
   const [completing, setCompleting] = useState(false);
+  const completingRef = useRef(false);
   const property = properties.find((item) => item.id === task.propertyId);
   const completed = task.status === "completed";
+  const bucket = taskBucket(task);
   const emphasizedPriority = task.priority === "urgent" || task.priority === "high";
 
   async function handleToggle() {
-    if (completing) return;
+    if (completingRef.current) return;
+    completingRef.current = true;
     setCompleting(true);
-    await new Promise((resolve) => window.setTimeout(resolve, 120));
-    await toggleTask(task.id);
-    setCompleting(false);
+    if (!completed) onCompletionStart?.(task);
+    try {
+      await Promise.all([
+        toggleTask(task.id),
+        completed ? Promise.resolve() : new Promise((resolve) => window.setTimeout(resolve, 360)),
+      ]);
+    } finally {
+      completingRef.current = false;
+      setCompleting(false);
+    }
   }
+
+  const taskClasses = [
+    styles.taskItem,
+    completed ? styles.isCompleted : "",
+    completing ? styles.isCompleting : "",
+    bucket === "overdue" ? styles.isOverdue : bucket === "today" ? styles.isToday : bucket === "upcoming" ? styles.isUpcoming : "",
+    task.priority === "urgent" ? styles.isUrgent : "",
+  ].filter(Boolean).join(" ");
 
   return (
     <>
-      <article className={`${styles.taskItem} ${completed ? styles.isCompleted : ""} ${completing ? styles.isCompleting : ""}`}>
-        <button className={styles.checkButton} type="button" onClick={() => void handleToggle()} aria-label={completed ? `Reopen ${task.title}` : `Complete ${task.title}`}>
+      <article className={taskClasses}>
+        <button className={styles.checkButton} type="button" onClick={() => void handleToggle()} disabled={completing} aria-label={completed ? `Reopen ${task.title}` : `Complete ${task.title}`}>
           <span className={`${styles.checkCircle} ${task.priority === "urgent" ? styles.urgentCheck : task.priority === "high" ? styles.highCheck : ""}`}>
             {(completed || completing) && <Check size={14} strokeWidth={2.5} />}
           </span>
@@ -47,7 +65,7 @@ export function TodayTaskItem({ task, showProperty = true, showCategory = false 
           <strong>{task.title}</strong>
           <span className={styles.primaryMeta}>
             {showProperty && property && <span><MapPin size={12} />{property.name}</span>}
-            <span className={taskBucket(task) === "overdue" ? styles.overdueMeta : undefined}><Clock3 size={12} />{deadlineLabel(task)}</span>
+            <span className={bucket === "overdue" ? styles.overdueMeta : bucket === "today" ? styles.todayMeta : bucket === "upcoming" ? styles.upcomingMeta : undefined}><Clock3 size={12} />{deadlineLabel(task)}</span>
           </span>
           {(emphasizedPriority || task.recurrence || (showCategory && task.category === "report")) && (
             <span className={styles.signals}>
