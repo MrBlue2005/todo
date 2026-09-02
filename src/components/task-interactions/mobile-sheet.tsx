@@ -139,17 +139,19 @@ export function MobileSheet({
         aria-modal="true"
         aria-label={title}
       >
-        <div className={styles.handle} />
-        <header className={styles.header}>
-          <div>
-            {eyebrow && <span className={styles.eyebrow}>{eyebrow}</span>}
-            <h2>{title}</h2>
-          </div>
-          <button className={`${styles.closeButton} min-h-11 min-w-11`} type="button" onClick={onClose} aria-label={backLabel ?? "Close"}>
-            {backLabel ? <ChevronLeft size={21} /> : <X size={19} />}
-          </button>
-        </header>
-        {children}
+        <div className={styles.sheetShell}>
+          <div className={styles.handle} />
+          <header className={styles.header}>
+            <div>
+              {eyebrow && <span className={styles.eyebrow}>{eyebrow}</span>}
+              <h2>{title}</h2>
+            </div>
+            <button className={`${styles.closeButton} min-h-11 min-w-11`} type="button" onClick={onClose} aria-label={backLabel ?? "Close"}>
+              {backLabel ? <ChevronLeft size={21} /> : <X size={19} />}
+            </button>
+          </header>
+          <div className={styles.sheetBody}>{children}</div>
+        </div>
       </section>
     </div>
   );
