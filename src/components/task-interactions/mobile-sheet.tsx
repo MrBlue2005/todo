@@ -36,13 +36,18 @@ export function MobileSheet({
       const height = viewport ? viewport.height : window.innerHeight;
       const top = viewport ? viewport.offsetTop : 0;
       const left = viewport ? viewport.offsetLeft : 0;
-      const layoutHeight = Math.max(window.innerHeight, document.documentElement.clientHeight, screen.availHeight, screen.height);
-      const reduced = Boolean(viewport && layoutHeight - height > 80);
+      const layoutHeight = Math.max(window.innerHeight, document.documentElement.clientHeight);
+      const keyboardInset = Math.max(0, layoutHeight - (height + top));
+      const active = document.activeElement;
+      const editableFocused = active instanceof HTMLElement && (
+        active.matches("input, textarea, select") || active.isContentEditable
+      );
+      const reduced = Boolean(viewport && editableFocused && keyboardInset > 80);
       if (backdrop) {
-        backdrop.style.top = `${top}px`;
-        backdrop.style.height = `${height}px`;
         backdrop.style.left = `calc(50% + ${left}px)`;
+        backdrop.style.paddingBottom = reduced ? `${keyboardInset}px` : "0px";
       }
+      sheet.dataset.keyboardOpen = reduced ? "true" : "false";
       if (full && !nested) {
         if (reduced) {
           sheet.style.height = `${height}px`;
@@ -55,6 +60,12 @@ export function MobileSheet({
         sheet.style.maxHeight = `calc(${height}px - 8px)`;
       } else {
         sheet.style.maxHeight = `min(calc(${height}px - 8px), 86dvh, 760px)`;
+      }
+      if (reduced && active instanceof HTMLElement && sheet.contains(active)) {
+        const bounds = active.getBoundingClientRect();
+        if (bounds.top < top + 8 || bounds.bottom > top + height - 12) {
+          window.requestAnimationFrame(() => active.scrollIntoView({ block: "nearest", inline: "nearest" }));
+        }
       }
     };
     sync();
@@ -78,7 +89,7 @@ export function MobileSheet({
       ref={backdropRef}
       className={`${styles.backdrop} ${nested ? styles.nestedBackdrop : ""}`}
       data-app-overlay
-      style={nested ? { position: "absolute", inset: 0, width: "auto", transform: "none" } : { position: "fixed", top: 0, left: "50%", right: "auto", bottom: "auto", width: "min(100%, var(--phone-width))", height: 0, transform: "translateX(-50%)" }}
+      style={nested ? { position: "absolute", inset: 0, width: "auto", transform: "none" } : { position: "fixed", inset: "0 auto 0 50%", width: "min(100%, var(--phone-width))", transform: "translateX(-50%)" }}
       role="presentation"
       onMouseDown={(event) => event.target === event.currentTarget && onClose()}
     >
