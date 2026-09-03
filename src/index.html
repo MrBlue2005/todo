@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; script-src 'self'; img-src 'self' data:">
+  <title>Codex Limit Monitor</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="titlebar">
+      <div class="brand">
+        <img class="brand-mark" src="assets/logo.png" alt="" aria-hidden="true">
+        <div>
+          <h1>CODEX LIMITS</h1>
+          <p id="sync-label">Se conecteaza...</p>
+        </div>
+      </div>
+      <nav class="window-actions no-drag" aria-label="Actiuni overlay">
+        <button id="refresh" class="icon-button" title="Actualizeaza" aria-label="Actualizeaza">↻</button>
+        <button id="compact" class="icon-button" title="Mod compact" aria-label="Mod compact">−</button>
+        <button id="minimize" class="icon-button minimize-button" title="Minimizeaza" aria-label="Minimizeaza">_</button>
+        <button id="settings" class="icon-button settings-button" title="Setari" aria-label="Setari" aria-expanded="false">⚙</button>
+      </nav>
+    </header>
+
+    <section id="workspace-list" class="workspace-list" aria-live="polite"></section>
+
+    <section id="settings-panel" class="settings-panel no-drag" hidden>
+      <div class="panel-heading">
+        <div>
+          <h2>Workspace-uri</h2>
+          <p>Fiecare profil izolat pastreaza separat autentificarea Codex.</p>
+        </div>
+        <button id="add-workspace" class="secondary-button">+ Adauga</button>
+      </div>
+      <div id="workspace-settings"></div>
+      <div class="settings-footer">
+        <button id="quit" class="danger-button">Inchide aplicatia</button>
+      </div>
+    </section>
+
+    <footer>
+      <span><i class="live-dot"></i> Actualizare automata la 60 sec.</span>
+      <span id="plan-label">Codex App Server</span>
+    </footer>
+  </main>
+  <script src="renderer.js"></script>
+</body>
+</html>
