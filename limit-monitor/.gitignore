@@ -1,9 +1,0 @@
-node_modules/
-dist/
-build/*
-!build/icon.ico
-!build/icon.png
-!build/icon-32.png
-*.log
-npm-debug.log*
-.DS_Store
